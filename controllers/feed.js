@@ -1,6 +1,8 @@
 exports.getPost = (req, res, next) => {
   res.status(200).json({
-    posts: [{ title: "first Jakubs post", content: "this is amazingpost !" }]
+    posts: [
+      { title: "first post of Jakub", content: "this is an amazing post!" }
+    ]
   });
 };
 
