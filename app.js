@@ -9,6 +9,17 @@ const app = express();
 
 app.use(bodyParser.json()); //application.json
 
+app.use((res, req, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, PATCH, DELETE"
+  );
+  //Allow to sent Content-Type in or POST method
+  res.setHEader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  next();
+});
+
 app.use("/feed", feedRoutes);
 
 app.listen(3000);
