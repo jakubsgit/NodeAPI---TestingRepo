@@ -6,6 +6,7 @@ const multer = require("multer");
 const mongoose = require("mongoose");
 
 const feedRoutes = require("./routes/feed");
+const authRoutes = require("./routes/auth");
 
 const app = express();
 
@@ -48,6 +49,7 @@ app.use((req, res, next) => {
 });
 
 app.use("/feed", feedRoutes);
+app.use("/auth", authRoutes);
 
 //we can catch some errors in this function and read it's properties
 //it's much more elegant way to read an errrors

@@ -4,20 +4,27 @@ const Post = require("../models/post");
 const deleteFile = require("../util/file").deleteFile;
 
 exports.getPosts = (req, res, next) => {
+  const currentPage = req.query.page || 1;
+  console.log(req.query.page);
+  const perPage = 3;
+  let totalItems;
   Post.find()
+    .countDocuments()
+    .then(count => {
+      totalItems = count;
+      return Post.find()
+        .skip((currentPage - 1) * perPage)
+        .limit(perPage);
+    })
     .then(posts => {
-      if (!posts) {
-        const error = new Error("No posts to show");
-        error.statusCode(422);
-        throw error;
-      }
       res.status(200).json({
-        message: "Posts fatched successfully",
-        posts: posts
+        message: "Fetched posts successfully.",
+        posts: posts,
+        totalItems: totalItems
       });
     })
     .catch(err => {
-      if (err.statusCode) {
+      if (!err.statusCode) {
         err.statusCode = 500;
       }
       next(err);
