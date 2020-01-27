@@ -1,3 +1,28 @@
-const mongodb = require("mongodb");
+const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
 
-const getDb = require("../util/database").getDb;
+const postSchema = new Schema(
+  {
+    title: {
+      type: String,
+      required: true
+    },
+    imageUrl: {
+      type: String,
+      required: true
+    },
+    Content: {
+      type: String,
+      required: true
+    },
+    creator: {
+      type: Object,
+      required: true
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+module.exports = mongoose.model("Post", postSchema);
