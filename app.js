@@ -1,5 +1,6 @@
 const express = require("express");
 const bodyParser = require("body-parser");
+const path = require("path");
 
 const mongoose = require("mongoose");
 
@@ -10,6 +11,7 @@ const app = express();
 //app.use(bodyParser.urlencoded());
 
 app.use(bodyParser.json()); //application.json
+app.use("/images", express.static(path.join(__dirname, "images")));
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -22,6 +24,15 @@ app.use((req, res, next) => {
 });
 
 app.use("/feed", feedRoutes);
+
+//we can catch some errors in this function and read it's properties
+//it's much more elegant way to read an errrors
+app.use((error, req, res, next) => {
+  console.log(error);
+  const status = error.statusCode || 500;
+  const message = error.message;
+  res.status(status).json({ message: message });
+});
 
 mongoose
   .connect(
