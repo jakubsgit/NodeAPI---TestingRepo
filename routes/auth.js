@@ -6,22 +6,53 @@ const User = require("../models/user");
 
 const authControllers = require("../controllers/auth");
 
-router.get(
+router.put(
   "/signup",
   [
-    body("emial")
+    body("email")
       .isEmail()
+      .withMessage("Please enter a valid email.")
       .custom((value, { req }) => {
-        return User.findOne({ email: value }).then(UserDoc => {
-          if (UserDoc) {
-            return Promise.reject("This email already is ocupated");
+        return User.findOne({ email: value }).then(userDoc => {
+          if (userDoc) {
+            return Promise.reject("E-Mail address already exists!");
           }
         });
       })
       .normalizeEmail(),
-    body("password").length({ min: 5 })
+    body("password")
+      .trim()
+      .isLength({ min: 5 }),
+    body("name")
+      .trim()
+      .not()
+      .isEmpty()
   ],
-  authControllers.getSignup
+  authControllers.postSignUp
+);
+
+router.post(
+  "/signin",
+  [
+    body("email")
+      .isEmail()
+      .custom((value, { req }) => {
+        return User.findOne({ email: value }).then(UserDoc => {
+          if (UserDoc) {
+            return Promise.reject("Wrong email or password");
+          }
+        });
+      })
+      .normalizeEmail(),
+    body("password")
+      .trim()
+      .isLength({ min: 5 }),
+    body("name")
+      .trim()
+      .not()
+      .isEmpty()
+  ],
+  authControllers.postSignIn
 );
 
 module.exports = router;
