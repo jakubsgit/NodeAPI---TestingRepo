@@ -2,20 +2,45 @@ const { validationResult } = require("express-validator");
 const Post = require("../models/post");
 
 exports.getPosts = (req, res, next) => {
-  res.status(200).json({
-    posts: [
-      {
-        title: "It's brand new post of my",
-        content: "The content of the post",
-        image: "../images/phone.png",
-        creator: "Jakub Antczak",
-        createdAt: new Date()
+  Post.find()
+    .then(posts => {
+      if (!posts) {
+        const error = new Error("No posts to show");
+        error.statusCode(422);
+        throw error;
       }
-    ]
-  });
+      res.status(200).json({
+        message: "Posts fatched successfully",
+        posts: posts
+      });
+    })
+    .catch(err => {
+      if (err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
+    });
 };
 exports.getPost = (req, res, next) => {
-  const postId = req.body.postId;
+  const postId = req.params.postId;
+  Post.findById(postId)
+    .then(post => {
+      if (!post) {
+        const error = new Error("I could not find your post on this id");
+        error.statusCode = 404;
+        throw error;
+      }
+      console.log(post),
+        res.status(200).json({
+          post: post
+        });
+    })
+    .catch(err => {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
+    });
 };
 
 //In API the errors mesages are very important to get know what's happening behind the scenes
@@ -31,14 +56,14 @@ exports.createPost = (req, res, next) => {
   const post = new Post({
     title: title,
     content: content,
-    imageUrl: "images.jpg",
+    imageUrl: "images/phone.png",
     creator: { name: "Jakub" }
   });
   post
     .save()
     .then(result => {
       console.log(result);
-      res.status(201).json({
+      res.status(200).json({
         message: "Post created successfully!",
         post: result
       });
@@ -47,6 +72,33 @@ exports.createPost = (req, res, next) => {
       if (!err.statusCode) {
         err.statusCode = 500;
       }
+      next(err);
+    });
+};
+
+exports.deleteById = (req, res, next) => {
+  const postId = req.params.postId;
+  Post.findOne({ _id: postId })
+    .then(post => {
+      if (!post) {
+        const error = new Error("Post with this id was not found");
+        error.statusCode = 422;
+        throw error;
+      }
+      Post.deleteOne(post)
+        .then(result => {
+          console.log(result);
+          res.status(200).json({ message: "Post successfully deleted" });
+        })
+        .catch(err => {
+          console.log(err);
+        });
+    })
+    .catch(err => {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      console.log(err);
       next(err);
     });
 };

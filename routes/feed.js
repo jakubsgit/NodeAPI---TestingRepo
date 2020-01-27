@@ -23,4 +23,6 @@ router.post(
 
 router.get("/post/:postId", feedController.getPost);
 
+router.post("/delete-post/:postId", feedController.deleteById);
+
 module.exports = router;
