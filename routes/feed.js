@@ -25,4 +25,17 @@ router.get("/post/:postId", feedController.getPost);
 
 router.post("/delete-post/:postId", feedController.deleteById);
 
+router.put(
+  "/edit/:postId",
+  [
+    body("title")
+      .trim()
+      .isLength({ min: 5 }),
+    body("content")
+      .trim()
+      .isLength({ min: 5 })
+  ],
+  feedController.postEditPost
+);
+
 module.exports = router;
