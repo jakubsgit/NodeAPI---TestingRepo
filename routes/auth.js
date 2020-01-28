@@ -32,27 +32,16 @@ router.put(
 );
 
 router.post(
-  "/signin",
+  "/login",
   [
     body("email")
       .isEmail()
-      .custom((value, { req }) => {
-        return User.findOne({ email: value }).then(UserDoc => {
-          if (UserDoc) {
-            return Promise.reject("Wrong email or password");
-          }
-        });
-      })
       .normalizeEmail(),
     body("password")
       .trim()
-      .isLength({ min: 5 }),
-    body("name")
-      .trim()
-      .not()
-      .isEmpty()
+      .isLength({ min: 5 })
   ],
-  authControllers.postSignIn
+  authControllers.postLogin
 );
 
 module.exports = router;

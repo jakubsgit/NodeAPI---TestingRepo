@@ -1,6 +1,7 @@
 const User = require("../models/user");
 const { validationResult } = require("express-validator");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 exports.postSignUp = (req, res, next) => {
   const errors = validationResult(req);
@@ -36,9 +37,9 @@ exports.postSignUp = (req, res, next) => {
     });
 };
 
-exports.postSignIn = (req, res, next) => {
+exports.postLogin = (req, res, next) => {
   const errors = validationResult(req);
-  if (errors) {
+  if (errors.length > 0) {
     const error = new Error("Validation failed");
     error.statusCode = 422;
     error.data = errors.array();
@@ -46,23 +47,38 @@ exports.postSignIn = (req, res, next) => {
   }
   const email = req.body.email;
   const password = req.body.password;
-  User.findOne({ emial: email })
+  let loadedUser;
+  User.findOne({ email: email })
     .then(user => {
       if (!user) {
         const error = new Error("Invalid email name or password");
-        error.statusCode = 422;
+        error.statusCode = 401;
         throw error;
       }
-      bcrypt(password, user.password).then(doMatch => {
-        if (doMatch) {
-          req.isloggedIn = true;
+      loadedUser = user;
+      return bcrypt.compare(password, loadedUser.password).then(doMatch => {
+        if (!doMatch) {
+          const error = new Error("Incorrect password");
+          error.statusCode = 401;
+          throw error;
         }
-        const error = new Error("Incorrect password");
-        error.statusCode = 422;
-        throw error;
+        const token = jwt.sign(
+          {
+            email: loadedUser.email,
+            userId: loadedUser._id.toString()
+          },
+          "somesupersecrettoken",
+          { expiresIn: "1h" }
+        );
+        res
+          .status(200)
+          .json({ token: token, userId: loadedUser._id.toString() });
       });
     })
     .catch(err => {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
       next(err);
     });
 };
