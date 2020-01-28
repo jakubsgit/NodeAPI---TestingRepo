@@ -1,11 +1,11 @@
 const { validationResult } = require("express-validator");
 const Post = require("../models/post");
+const User = require("../models/user");
 
 const deleteFile = require("../util/file").deleteFile;
 
 exports.getPosts = (req, res, next) => {
   const currentPage = req.query.page || 1;
-  console.log(req.query.page);
   const perPage = 3;
   let totalItems;
   Post.find()
@@ -55,38 +55,42 @@ exports.getPost = (req, res, next) => {
 //In API the errors mesages are very important to get know what's happening behind the scenes
 exports.createPost = (req, res, next) => {
   const errors = validationResult(req);
-  let imageUrl;
   if (!errors.isEmpty()) {
-    const error = new Error("Vaidation failed, entered data is incorrect");
+    const error = new Error("Validation failed, entered data is incorrect.");
     error.statusCode = 422;
     throw error;
   }
+  if (!req.file) {
+    const error = new Error("No image provided.");
+    error.statusCode = 422;
+    throw error;
+  }
+  const image = req.file.path;
   const title = req.body.title;
   const content = req.body.content;
-  if (!req.file) {
-    const error = new Error(
-      "The file does not exist in the current environment"
-    );
-    error.statusCode = 422;
-    throw error;
-  } else {
-    console.log(req.file.path);
-    imageUrl = req.file.path;
-  }
-
+  let creator;
   const post = new Post({
     title: title,
     content: content,
-    imageUrl: imageUrl,
-    creator: { name: "Jakub" }
+    image: image,
+    creator: req.userId
   });
   post
     .save()
     .then(result => {
-      console.log(result);
-      res.status(200).json({
+      return User.findById(req.userId);
+    })
+    .then(user => {
+      console.log(user);
+      creator = user;
+      user.posts.push(post);
+      return user.save();
+    })
+    .then(result => {
+      res.status(201).json({
         message: "Post created successfully!",
-        post: result
+        post: post,
+        creator: { _id: creator._id, name: creator.name }
       });
     })
     .catch(err => {
@@ -101,20 +105,31 @@ exports.deleteById = (req, res, next) => {
   const postId = req.params.postId;
   Post.findOne({ _id: postId })
     .then(post => {
+      console.log(post.creator);
+      console.log(req.userId);
       if (!post) {
         const error = new Error("Post with this id was not found");
         error.statusCode = 422;
         throw error;
       }
-      Post.deleteOne(post)
-        .then(result => {
-          deleteFile(post.imageUrl);
-          console.log(result);
-          res.status(200).json({ message: "Post successfully deleted" });
-        })
-        .catch(err => {
-          console.log(err);
-        });
+      if (post.creator.toString() !== req.userId) {
+        const error = new Error("Wrong user to delete this post");
+        error.statusCode = 401;
+        throw error;
+      }
+      deleteFile(post.image);
+      Post.findByIdAndRemove(postId);
+    })
+    .then(result => {
+      console.log("deleted file before finding user");
+      User.findOne(req.userId);
+    })
+    .then(user => {
+      console.log(user);
+    })
+    .then(result => {
+      console.log(result);
+      res.status(200).json({ message: "Post successfully deleted" });
     })
     .catch(err => {
       if (!err.statusCode) {
@@ -129,11 +144,11 @@ exports.postEditPost = (req, res, next) => {
   const postId = req.params.postId;
   const updatedTitle = req.body.title;
   const updatedContent = req.body.content;
-  let imageUrl = req.body.image;
+  let image = req.body.image;
   if (req.file) {
-    imageUrl = req.file.path;
+    image = req.file.path;
   }
-  if (!imageUrl) {
+  if (!image) {
     const error = new Error("No image was picked!");
     error.statusCode = 422;
     throw error;
@@ -145,22 +160,26 @@ exports.postEditPost = (req, res, next) => {
         error.statusCode = 422;
         throw error;
       }
-      console.log(post);
-      if (imageUrl !== post.imageUrl) {
-        deleteFile(post.imageUrl);
+      if (post.creator.toString() !== req.userId) {
+        const error = new Error("Wrong user to edit this post");
+        error.statusCode = 401;
+        throw error;
+      }
+      if (image !== post.image) {
+        deleteFile(post.image);
       }
       post.title = updatedTitle;
       post.content = updatedContent;
-      post.imageUrl = imageUrl;
+      post.image = image;
       return post.save();
     })
     .then(result =>
       res.status(200).json({ message: "Post updated", post: result })
     )
     .catch(err => {
-      console.log(err);
-      const error = err;
-      error.statusCode = 500;
-      return next(error);
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      return next(err);
     });
 };
