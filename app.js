@@ -39,7 +39,10 @@ app.use(
 );
 app.use("/images", express.static(path.join(__dirname, "images")));
 
+const policy = "default-src 'self'";
+
 app.use((req, res, next) => {
+  res.setHeader("Content-Security-Policy", true);
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   res.setHeader(
@@ -51,10 +54,11 @@ app.use((req, res, next) => {
 });
 
 app.use(
-  "./graphql",
+  "/graphql",
   graphqlHttp({
     schema: graphqlSchema,
-    rootValue: graphqlResolver
+    rootValue: graphqlResolver,
+    graphiql: true
   })
 );
 //we can catch some errors in this function and read it's properties
