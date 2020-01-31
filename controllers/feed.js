@@ -1,6 +1,7 @@
 const { validationResult } = require("express-validator");
 const Post = require("../models/post");
 const User = require("../models/user");
+const io = require("../socket");
 
 const deleteFile = require("../util/file").deleteFile;
 
@@ -14,6 +15,7 @@ exports.getPosts = (req, res, next) => {
       totalItems = count;
       return Post.find()
         .skip((currentPage - 1) * perPage)
+        .sort({ createdAt: -1 })
         .limit(perPage);
     })
     .then(posts => {
@@ -81,9 +83,9 @@ exports.createPost = (req, res, next) => {
       return User.findById(req.userId);
     })
     .then(user => {
-      console.log(user);
       creator = user;
       user.posts.push(post);
+      io.getIO().emit("posts", { action: "create", post: post });
       return user.save();
     })
     .then(result => {
@@ -103,10 +105,9 @@ exports.createPost = (req, res, next) => {
 
 exports.deleteById = (req, res, next) => {
   const postId = req.params.postId;
+  let post;
   Post.findOne({ _id: postId })
     .then(post => {
-      console.log(post.creator);
-      console.log(req.userId);
       if (!post) {
         const error = new Error("Post with this id was not found");
         error.statusCode = 422;
@@ -117,18 +118,19 @@ exports.deleteById = (req, res, next) => {
         error.statusCode = 401;
         throw error;
       }
+      io.getIO().emit("posts", { action: "delete", post: post });
       deleteFile(post.image);
-      Post.findByIdAndRemove(postId);
+      post = post;
+      return Post.findByIdAndRemove({ _id: postId });
     })
     .then(result => {
-      console.log("deleted file before finding user");
-      User.findOne(req.userId);
+      return User.findOne({ _id: req.userId });
     })
     .then(user => {
-      console.log(user);
+      user.posts.pull(postId);
+      return user.save();
     })
     .then(result => {
-      console.log(result);
       res.status(200).json({ message: "Post successfully deleted" });
     })
     .catch(err => {
@@ -171,11 +173,13 @@ exports.postEditPost = (req, res, next) => {
       post.title = updatedTitle;
       post.content = updatedContent;
       post.image = image;
+
       return post.save();
     })
-    .then(result =>
-      res.status(200).json({ message: "Post updated", post: result })
-    )
+    .then(result => {
+      io.getIO().emit("posts", { action: "edit", post: result });
+      res.status(200).json({ message: "Post updated", post: result });
+    })
     .catch(err => {
       if (!err.statusCode) {
         err.statusCode = 500;
