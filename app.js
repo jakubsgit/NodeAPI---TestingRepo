@@ -49,7 +49,9 @@ app.use((req, res, next) => {
     "Access-Control-Allow-Methods",
     "GET, POST, PUT, PATCH, DELETE"
   );
-
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
   next();
 });
 
@@ -58,7 +60,16 @@ app.use(
   graphqlHttp({
     schema: graphqlSchema,
     rootValue: graphqlResolver,
-    graphiql: true
+    graphiql: true,
+    customFormatErrorFn(err) {
+      if (!err.originalError) {
+        return err;
+      }
+      const data = err.originalError.data;
+      const message = err.message;
+      const code = err.originalError.code || 500;
+      return { message: message, status: code, data: data };
+    }
   })
 );
 //we can catch some errors in this function and read it's properties

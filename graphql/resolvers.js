@@ -12,13 +12,17 @@ module.exports = {
     if (!validator.isEmail(userInput.email)) {
       error.push(new Error("this email supposed to be an email"));
     }
-    if (
-      validator.isEmpty(userInput.password) ||
-      validator.isLength(userInput.password, { min: 5 })
-    ) {
+    //what the fuck with the isLength finction in validator??
+    if (validator.isEmpty(userInput.password)) {
       errors.push(new Error("this password is too short"));
     }
-        if (errors.)
+    if (errors.length > 0) {
+      console.log(errors);
+      const error = new Error("Invalid input");
+      error.data = errors;
+      error.code = 422;
+      throw error;
+    }
     const hashedPass = await bcrypt.hash(userInput.password, 12);
     const user = new User({
       email: userInput.email,
