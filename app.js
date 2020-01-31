@@ -2,13 +2,14 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const path = require("path");
 const multer = require("multer");
-
 const mongoose = require("mongoose");
-
-const feedRoutes = require("./routes/feed");
-const authRoutes = require("./routes/auth");
-
 const app = express();
+
+//we need to require some ackage that is connected with graphql
+const graphqlHttp = require("express-graphql");
+//and also we need to remremeber about schamas that we already created
+const graphqlSchema = require("./graphql/schema");
+const graphqlResolver = require("./graphql/resolvers");
 
 const fileStorage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -49,9 +50,13 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use("/feed", feedRoutes);
-app.use("/auth", authRoutes);
-
+app.use(
+  "./graphql",
+  graphqlHttp({
+    schema: graphqlSchema,
+    rootValue: graphqlResolver
+  })
+);
 //we can catch some errors in this function and read it's properties
 //it's much more elegant way to read an errrors
 app.use((error, req, res, next) => {
@@ -72,12 +77,8 @@ mongoose
     }
   )
   .then(() => {
-    console.log("DBconnected!");
-    const server = app.listen(8080);
-    const io = require("./socket").init(server);
-    io.on("connection", socket => {
-      // console.log(socket);
-    });
+    console.log("db connected");
+    app.listen(8080);
   })
   .catch(err => {
     console.log(err);
