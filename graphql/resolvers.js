@@ -13,7 +13,10 @@ module.exports = {
       error.push(new Error("this email supposed to be an email"));
     }
     //what the fuck with the isLength finction in validator??
-    if (validator.isEmpty(userInput.password)) {
+    if (
+      validator.isEmpty(userInput.password)
+      //   validator.isLength(userInput.password, { min: 1, max: undefined })
+    ) {
       errors.push(new Error("this password is too short"));
     }
     if (errors.length > 0) {
