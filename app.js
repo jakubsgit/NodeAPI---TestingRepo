@@ -4,6 +4,8 @@ const path = require("path");
 const multer = require("multer");
 const mongoose = require("mongoose");
 const app = express();
+const expressPlayground = require("graphql-playground-middleware-express")
+  .default;
 
 //we need to require some ackage that is connected with graphql
 const graphqlHttp = require("express-graphql");
@@ -72,6 +74,7 @@ app.use(
     }
   })
 );
+app.get("/playground", expressPlayground({ endpoint: "/graphql" }));
 //we can catch some errors in this function and read it's properties
 //it's much more elegant way to read an errrors
 app.use((error, req, res, next) => {
