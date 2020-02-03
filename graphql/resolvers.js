@@ -5,7 +5,7 @@ const validator = require("validator");
 const jwt = require("jsonwebtoken");
 
 module.exports = {
-  createUser: async function({ userInput }, req) {
+  createUser: async function ({ userInput }, req) {
     const existingUser = await User.findOne({ email: userInput.email });
     const errors = [];
     if (existingUser) {
@@ -40,7 +40,7 @@ module.exports = {
       _id: createdUser._id.toString()
     };
   },
-  login: async function({ email, password }) {
+  login: async function ({ email, password }) {
     const user = await User.findOne({ email: email });
     if (!user) {
       const error = new Error("user not found");
@@ -63,7 +63,7 @@ module.exports = {
     );
     return { token: token, userId: user._id.toString() };
   },
-  createPost: async function({ postInput }, req) {
+  createPost: async function ({ postInput }, req) {
     if (!req.isAuth) {
       const error = new Error("Not authenticated!");
       error.code = 401;
@@ -110,7 +110,7 @@ module.exports = {
       updatedAt: createdPost.updatedAt.toISOString()
     };
   },
-  posts: async function(args, req) {
+  posts: async function (args, req) {
     if (!req.isAuth) {
       const error = new Error("Not authenticated!");
       error.code = 401;
@@ -132,7 +132,7 @@ module.exports = {
       totalPosts: totalPosts
     };
   },
-  posts: async function({ page }, req) {
+  posts: async function ({ page }, req) {
     if (!req.isAuth) {
       const error = new Error("Not authenticated!");
       error.code = 401;
@@ -159,5 +159,34 @@ module.exports = {
       }),
       totalPosts: totalPost
     };
+  },
+  post: async function ({ _id }, req) {
+    if (!req.isAuth) {
+      const error = new Error("Not authenticated!");
+      error.code = 401;
+      throw error;
+    }
+
+    const post = await Post.findOne({ _id: _id }).populate("creator");
+    if (!post) {
+      const error = new Error("no post found");
+      error.code = 401;
+      throw error;
+    }
+    return {
+      ...post._doc,
+      _id: post._id.toString(),
+      createdAt: post.createdAt.toISOString(),
+      updatedAt: post.updatedAt.toISOString()
+    };
+  },
+  updatePost: async function ( { _id, inputData } , res) {
+    if (!req.isAuth) {
+      const error = new Error("Not authenticated!");
+      error.code = 401;
+      throw error;
+    } 
+    const post = await Post.findOne({ _id: _id })
+    
+
   }
-};
