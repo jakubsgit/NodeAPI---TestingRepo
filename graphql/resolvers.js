@@ -58,44 +58,78 @@ module.exports = {
         userId: user._id.toString(),
         email: user.email
       },
-      "supersecretsecret",
+      "somesupersecrettoken",
       { expiresIn: "1h" }
     );
     return { token: token, userId: user._id.toString() };
   },
   createPost: async function({ postInput }, req) {
+    if (!req.isAuth) {
+      const error = new Error("Not authenticated!");
+      error.code = 401;
+      throw error;
+    }
     const errors = [];
     if (
       validator.isEmpty(postInput.title) ||
-      validator.isLength(postInput.title[{ min: 5 }])
+      !validator.isLength(postInput.title, { min: 5 })
     ) {
-      errors.push("Your title is missed or it is to short");
+      errors.push({ message: "Title is invalid." });
     }
     if (
       validator.isEmpty(postInput.content) ||
-      validator.isLength(postInput.content, [{ min: 5 }])
+      !validator.isLength(postInput.content, { min: 5 })
     ) {
-      errors.push("Your content is missed or it is to short");
-    }
-    if (validator.isEmpty(postInput.image)) {
-      errors.push("Your image is missed or it is wrong format");
+      errors.push({ message: "Content is invalid." });
     }
     if (errors.length > 0) {
-      const error = new Error("Invalid input");
+      const error = new Error("Invalid input.");
       error.data = errors;
       error.code = 422;
+      throw error;
+    }
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("Invalid user.");
+      error.code = 401;
       throw error;
     }
     const post = new Post({
       title: postInput.title,
       content: postInput.content,
-      image: postInput.image
+      image: postInput.image,
+      creator: user
     });
     const createdPost = await post.save();
-    // We need to add some creator to our post
+    user.posts.push(createdPost);
+    await user.save();
     return {
-      ...createdPost,
-      _id: createdPost._id.toString()
+      ...createdPost._doc,
+      _id: createdPost._id.toString(),
+      createdAt: createdPost.createdAt.toISOString(),
+      updatedAt: createdPost.updatedAt.toISOString()
+    };
+  },
+  posts: async function(args, req) {
+    if (!req.isAuth) {
+      const error = new Error("Not authenticated!");
+      error.code = 401;
+      throw error;
+    }
+    const totalPosts = await Post.find().countDocuments();
+    const posts = await Post.find()
+      .sort({ createdAt: -1 })
+      .populate("creator");
+    return {
+      posts: posts.map(p => {
+        return {
+          ...p._doc,
+          _id: p._id.toString(),
+          createdAt: p.createdAt.toISOString(),
+          updatedAt: p.updatedAt.toISOString()
+        };
+      }),
+      totalPosts: totalPosts
     };
   }
 };
