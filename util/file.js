@@ -5,7 +5,6 @@ const deleteFile = filePath => {
     if (err) {
       return new Error("The file does not exist");
     }
-    console.log("File has been deleted");
   });
 };
 
