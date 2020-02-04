@@ -4,7 +4,7 @@
   "description": "my first amazing API in Node.js",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "mocha",
     "start": "nodemon app.js"
   },
   "author": "",
@@ -14,6 +14,7 @@
     "body-parser": "^1.19.0",
     "express": "^4.17.1",
     "express-validator": "^6.3.1",
+    "helmet": "^3.21.2",
     "jsonwebtoken": "^8.5.1",
     "mongodb": "^3.5.2",
     "mongoose": "^5.8.9",
@@ -21,6 +22,7 @@
     "socket.io": "^2.3.0"
   },
   "devDependencies": {
+    "mocha": "^7.0.1",
     "nodemon": "^2.0.2"
   }
 }
